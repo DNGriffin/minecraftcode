@@ -1,0 +1,13 @@
+{
+    "opencode.status.connected": "Connected to OpenCode",
+    "opencode.status.disconnected": "Disconnected from OpenCode",
+    "opencode.status.idle": "OpenCode: Idle (Game Paused)",
+    "opencode.status.generating": "OpenCode: Generating...",
+    "opencode.status.busy": "OpenCode: Processing...",
+    "opencode.command.prompt.usage": "Usage: /oc <prompt>",
+    "opencode.command.session.new": "Created new session: %s",
+    "opencode.command.session.switch": "Switched to session: %s",
+    "opencode.command.cancel": "Cancelled current generation",
+    "opencode.error.not_connected": "Not connected to OpenCode server",
+    "opencode.error.no_session": "No active session. Use /oc session new"
+}

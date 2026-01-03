@@ -1,0 +1,24 @@
+# Gradle
+.gradle/
+build/
+out/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.launch
+
+# Minecraft
+run/
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Loom
+remappedSrc/
+.fabric/

@@ -1,0 +1,23 @@
+{
+    "schemaVersion": 1,
+    "id": "opencode",
+    "version": "${version}",
+    "name": "OpenCode Minecraft",
+    "description": "An OpenCode client for Minecraft single player with game pause integration",
+    "authors": ["OpenCode"],
+    "contact": {},
+    "license": "MIT",
+    "icon": "assets/opencode/icon.png",
+    "environment": "client",
+    "entrypoints": {
+        "client": ["com.opencode.minecraft.OpenCodeMod"]
+    },
+    "mixins": ["opencode.mixins.json"],
+    "accessWidener": "opencode.accesswidener",
+    "depends": {
+        "fabricloader": ">=0.16.0",
+        "minecraft": "~1.21.4",
+        "java": ">=21",
+        "fabric-api": "*"
+    }
+}
