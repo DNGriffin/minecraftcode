@@ -29,9 +29,9 @@ https://github.com/user-attachments/assets/e3aad745-a03a-4c0f-b83c-ce15f92d66ed
 
 1. Install [Fabric Loader](https://fabricmc.net/use/installer/) for Minecraft 1.21.4
 2. Download the mod JAR from [Releases](../../releases) and place it in your `.minecraft/mods` folder
-3. Start the OpenCode server: `opencode serve`
+3. Start OpenCode: `opencode`
 4. Launch Minecraft and create/join a single player world
-5. Use `/oc session new` to create a coding session
+5. Use `/oc session list` & `/oc session join #` 
 6. Start coding with `/oc <your prompt here>`
 
 ## Requirements
