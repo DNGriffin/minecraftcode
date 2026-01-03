@@ -7,6 +7,14 @@
 
 A Fabric mod that integrates [OpenCode](https://github.com/anthropics/opencode) into Minecraft Java Edition single player, with a unique pause mechanic that freezes the game while the AI is waiting for input and resumes when it's actively working.
 
+## Demo
+
+
+
+https://github.com/user-attachments/assets/e3aad745-a03a-4c0f-b83c-ce15f92d66ed
+
+
+
 ## Features
 
 - **Smart Pause Mechanic** - Game automatically pauses when the AI is idle, letting you focus on coding without your character dying. Resumes instantly when the AI starts working.
