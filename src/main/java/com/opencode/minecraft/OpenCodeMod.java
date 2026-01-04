@@ -4,6 +4,7 @@ import com.opencode.minecraft.client.AgentClient;
 import com.opencode.minecraft.client.CodexClient;
 import com.opencode.minecraft.client.OpenCodeClient;
 import com.opencode.minecraft.command.OpenCodeCommand;
+import com.opencode.minecraft.client.session.SessionStatus;
 import com.opencode.minecraft.config.ConfigManager;
 import com.opencode.minecraft.config.ModConfig;
 import com.opencode.minecraft.game.PauseController;
@@ -64,6 +65,38 @@ public class OpenCodeMod implements ClientModInitializer {
 
     public static ConfigManager getConfigManager() {
         return configManager;
+    }
+
+    public static synchronized boolean ensureBackend(String backend) {
+        if (configManager == null) {
+            return false;
+        }
+        ModConfig config = configManager.getConfig();
+        if (config == null) {
+            return false;
+        }
+        String normalized = backend.toLowerCase();
+        if (config.backend != null && config.backend.equalsIgnoreCase(normalized) && client != null) {
+            return false;
+        }
+
+        if (client != null) {
+            client.shutdown();
+        }
+
+        configManager.setBackend(normalized);
+        if (pauseController != null) {
+            pauseController.setStatus(SessionStatus.DISCONNECTED);
+        }
+
+        if ("codex".equalsIgnoreCase(normalized)) {
+            client = new CodexClient(config, pauseController);
+        } else {
+            client = new OpenCodeClient(config, pauseController);
+        }
+
+        LOGGER.info("Switched backend to {}", normalized);
+        return true;
     }
 
     public static String getAgentName() {

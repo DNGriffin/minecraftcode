@@ -116,6 +116,24 @@ public class MessageRenderer {
     }
 
     /**
+     * Sends a reasoning summary message
+     */
+    public void sendReasoningMessage(String text) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client.player == null) return;
+
+        String agentName = OpenCodeMod.getAgentName();
+
+        Text formatted = MarkdownToMinecraft.convert(text).copy().formatted(Formatting.GRAY);
+
+        MutableText message = Text.literal("")
+                .append(Text.literal("[" + agentName + " Reasoning] ").formatted(Formatting.DARK_GRAY))
+                .append(formatted);
+
+        client.inGameHud.getChatHud().addMessage(message);
+    }
+
+    /**
      * Sends an error message
      */
     public void sendErrorMessage(String text) {

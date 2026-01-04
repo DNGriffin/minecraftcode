@@ -22,7 +22,7 @@ OpenCode Minecraft is a Fabric mod for Minecraft 1.21.4 that integrates with [Op
 │                     Minecraft Client                         │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
 │  │   Mixins    │  │  Commands   │  │    Game Layer       │  │
-│  │ (hooks)     │  │  (/oc ...)  │  │ (PauseController,   │  │
+│  │ (hooks)     │  │ (/oc,/codex)│  │ (PauseController,   │  │
 │  │             │  │             │  │  MessageRenderer)   │  │
 │  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘  │
 │         │                │                     │             │
@@ -57,7 +57,7 @@ OpenCode Minecraft is a Fabric mod for Minecraft 1.21.4 that integrates with [Op
 | `game/PauseController.java` | **CRITICAL**: Determines when game should pause |
 | `game/MessageRenderer.java` | Renders AI responses to Minecraft chat |
 | `game/PauseOverlay.java` | Dark overlay shown when paused |
-| `command/OpenCodeCommand.java` | All `/oc` command handlers |
+| `command/OpenCodeCommand.java` | All `/oc` and `/codex` command handlers |
 | `config/ModConfig.java` | Configuration data class |
 | `config/ConfigManager.java` | Loads/saves config JSON |
 | `mixin/IntegratedServerMixin.java` | Cancels server ticks when paused |
@@ -136,6 +136,8 @@ Status transitions:
 
 ## Commands
 
+Commands are available as `/oc` or `/codex` (using `/codex` switches the backend to Codex).
+
 | Command | Handler Method | Description |
 |---------|----------------|-------------|
 | `/oc <prompt>` | `executePrompt` | Send prompt to current session |
@@ -156,6 +158,9 @@ Stored in `.minecraft/config/opencode.json`:
 ```java
 public class ModConfig {
     public String serverUrl = "http://localhost:4096";
+    public String backend = "opencode";
+    public String codexPath = "codex";
+    public boolean codexAutoApprove = true;
     public String workingDirectory = System.getProperty("user.home");
     public String lastSessionId = null;
     public boolean autoReconnect = true;

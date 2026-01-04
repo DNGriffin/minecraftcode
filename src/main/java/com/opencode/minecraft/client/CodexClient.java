@@ -20,6 +20,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -44,6 +45,7 @@ public class CodexClient implements AgentClient {
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final Map<String, CompletableFuture<JsonObject>> pendingRequests = new ConcurrentHashMap<>();
     private final Object writeLock = new Object();
+    private final Map<String, ReasoningSummaryState> reasoningSummaries = new HashMap<>();
     private final AtomicLong processToken = new AtomicLong();
 
     private volatile Process process;
@@ -56,6 +58,12 @@ public class CodexClient implements AgentClient {
     private volatile String currentThreadId;
     private volatile String currentTurnId;
     private volatile SessionStatus status = SessionStatus.DISCONNECTED;
+
+    private static final class ReasoningSummaryState {
+        private long summaryIndex = -1;
+        private final StringBuilder buffer = new StringBuilder();
+        private boolean hasOutput = false;
+    }
 
     public CodexClient(ModConfig config, PauseController pauseController) {
         this.config = config;
@@ -246,6 +254,7 @@ public class CodexClient implements AgentClient {
                 String threadId = getString(params, "threadId");
                 if (threadId != null && threadId.equals(currentThreadId)) {
                     messageRenderer.flushCurrentMessage();
+                    flushReasoningSummaries();
                     setStatus(SessionStatus.IDLE);
                     currentTurnId = null;
                     messageRenderer.sendSystemMessage("Ready for input");
@@ -262,6 +271,8 @@ public class CodexClient implements AgentClient {
                     }
                 }
             }
+            case "item/reasoning/summaryTextDelta" -> handleReasoningSummaryDelta(params);
+            case "item/reasoning/summaryPartAdded" -> handleReasoningSummaryPartAdded(params);
             case "item/started" -> {
                 if (isCurrentThread(params)) {
                     JsonObject item = params.getAsJsonObject("item");
@@ -355,6 +366,7 @@ public class CodexClient implements AgentClient {
                 messageRenderer.sendToolMessage(tool != null ? tool : "mcpToolCall",
                         normalizeStatus(statusValue));
             }
+            case "reasoning" -> handleReasoningCompleted(item);
             default -> {
                 // No special handling.
             }
@@ -444,6 +456,17 @@ public class CodexClient implements AgentClient {
         return asString(obj.get(key));
     }
 
+    private static long getLong(JsonObject obj, String key, long defaultValue) {
+        if (obj == null || !obj.has(key)) return defaultValue;
+        JsonElement element = obj.get(key);
+        if (element == null || element.isJsonNull()) return defaultValue;
+        try {
+            return element.getAsLong();
+        } catch (Exception e) {
+            return defaultValue;
+        }
+    }
+
     private static String asString(JsonElement element) {
         if (element == null || element.isJsonNull()) return null;
         return element.getAsString();
@@ -462,6 +485,7 @@ public class CodexClient implements AgentClient {
                     currentSession = session;
                     currentThreadId = session.getId();
                     OpenCodeMod.getConfigManager().setLastSessionId(session.getId());
+                    reasoningSummaries.clear();
                     setStatus(SessionStatus.IDLE);
                     return session;
                 });
@@ -497,6 +521,7 @@ public class CodexClient implements AgentClient {
                     currentSession = session;
                     currentThreadId = session.getId();
                     OpenCodeMod.getConfigManager().setLastSessionId(session.getId());
+                    reasoningSummaries.clear();
                     setStatus(SessionStatus.IDLE);
                     return session;
                 });
@@ -581,6 +606,7 @@ public class CodexClient implements AgentClient {
         running = false;
         initialized = false;
         pendingRequests.clear();
+        reasoningSummaries.clear();
 
         if (stdinWriter != null) {
             try {
@@ -595,5 +621,84 @@ public class CodexClient implements AgentClient {
             process.destroy();
         }
         process = null;
+    }
+
+    private void handleReasoningSummaryDelta(JsonObject params) {
+        if (!isCurrentThread(params)) return;
+        String itemId = getString(params, "itemId");
+        String delta = getString(params, "delta");
+        if (itemId == null || delta == null || delta.isEmpty()) return;
+        long summaryIndex = getLong(params, "summaryIndex", -1);
+
+        ReasoningSummaryState state = reasoningSummaries.computeIfAbsent(itemId, id -> new ReasoningSummaryState());
+        if (state.summaryIndex != -1 && summaryIndex != -1 && summaryIndex != state.summaryIndex
+                && state.buffer.length() > 0) {
+            flushReasoningBuffer(itemId, state);
+        }
+        state.summaryIndex = summaryIndex;
+        state.buffer.append(delta);
+    }
+
+    private void handleReasoningSummaryPartAdded(JsonObject params) {
+        if (!isCurrentThread(params)) return;
+        String itemId = getString(params, "itemId");
+        if (itemId == null) return;
+        long summaryIndex = getLong(params, "summaryIndex", -1);
+
+        ReasoningSummaryState state = reasoningSummaries.computeIfAbsent(itemId, id -> new ReasoningSummaryState());
+        flushReasoningBuffer(itemId, state);
+        state.summaryIndex = summaryIndex;
+    }
+
+    private void handleReasoningCompleted(JsonObject item) {
+        String itemId = getString(item, "id");
+        ReasoningSummaryState state = itemId != null ? reasoningSummaries.get(itemId) : null;
+        if (state != null) {
+            flushReasoningBuffer(itemId, state);
+        }
+
+        if (state == null || !state.hasOutput) {
+            JsonArray summary = item != null ? item.getAsJsonArray("summary") : null;
+            if (summary != null) {
+                for (JsonElement element : summary) {
+                    if (element != null && element.isJsonPrimitive()) {
+                        String text = element.getAsString();
+                        if (text != null && !text.isBlank()) {
+                            sendReasoningText(text);
+                            if (state != null) {
+                                state.hasOutput = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (itemId != null) {
+            reasoningSummaries.remove(itemId);
+        }
+    }
+
+    private void flushReasoningSummaries() {
+        for (Map.Entry<String, ReasoningSummaryState> entry : reasoningSummaries.entrySet()) {
+            flushReasoningBuffer(entry.getKey(), entry.getValue());
+        }
+    }
+
+    private void flushReasoningBuffer(String itemId, ReasoningSummaryState state) {
+        if (state == null || state.buffer.length() == 0) return;
+        String text = state.buffer.toString();
+        state.buffer.setLength(0);
+        state.hasOutput = true;
+        sendReasoningText(text);
+    }
+
+    private void sendReasoningText(String text) {
+        String[] lines = text.split("\n");
+        for (String line : lines) {
+            if (!line.isBlank()) {
+                messageRenderer.sendReasoningMessage(line);
+            }
+        }
     }
 }

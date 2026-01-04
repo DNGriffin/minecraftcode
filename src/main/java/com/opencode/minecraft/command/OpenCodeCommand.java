@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Handles all /oc commands for interacting with OpenCode.
+ * Handles all /oc (alias /codex) commands for interacting with OpenCode/Codex.
  *
  * Commands:
  * - /oc                 - Show help
@@ -36,101 +36,118 @@ public class OpenCodeCommand {
     private static List<SessionInfo> cachedSessions = new ArrayList<>();
 
     public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
-        dispatcher.register(
-            ClientCommandManager.literal("oc")
-                // /oc help
-                .then(ClientCommandManager.literal("help")
-                    .executes(OpenCodeCommand::executeHelp))
-
-                // /oc status
-                .then(ClientCommandManager.literal("status")
-                    .executes(OpenCodeCommand::executeStatus))
-
-                // /oc cancel
-                .then(ClientCommandManager.literal("cancel")
-                    .executes(OpenCodeCommand::executeCancel))
-
-                // /oc pause
-                .then(ClientCommandManager.literal("pause")
-                    .executes(OpenCodeCommand::executePause))
-
-                // /oc session ...
-                .then(ClientCommandManager.literal("session")
-                    // /oc session new
-                    .then(ClientCommandManager.literal("new")
-                        .executes(OpenCodeCommand::executeSessionNew))
-                    // /oc session list
-                    .then(ClientCommandManager.literal("list")
-                        .executes(OpenCodeCommand::executeSessionList))
-                    // /oc session use <id>
-                    .then(ClientCommandManager.literal("use")
-                        .then(ClientCommandManager.argument("sessionId", StringArgumentType.string())
-                            .executes(OpenCodeCommand::executeSessionUse))))
-
-                // /oc config ...
-                .then(ClientCommandManager.literal("config")
-                    // /oc config url <url>
-                    .then(ClientCommandManager.literal("url")
-                        .then(ClientCommandManager.argument("url", StringArgumentType.string())
-                            .executes(OpenCodeCommand::executeConfigUrl)))
-                    // /oc config backend <opencode|codex>
-                    .then(ClientCommandManager.literal("backend")
-                        .then(ClientCommandManager.argument("backend", StringArgumentType.word())
-                            .executes(OpenCodeCommand::executeConfigBackend)))
-                    // /oc config codex <path>
-                    .then(ClientCommandManager.literal("codex")
-                        .then(ClientCommandManager.argument("path", StringArgumentType.greedyString())
-                            .executes(OpenCodeCommand::executeConfigCodexPath)))
-                    // /oc config approve <true|false>
-                    .then(ClientCommandManager.literal("approve")
-                        .then(ClientCommandManager.argument("autoApprove", StringArgumentType.word())
-                            .executes(OpenCodeCommand::executeConfigAutoApprove)))
-                    // /oc config dir <path>
-                    .then(ClientCommandManager.literal("dir")
-                        .then(ClientCommandManager.argument("path", StringArgumentType.greedyString())
-                            .executes(OpenCodeCommand::executeConfigDir))))
-
-                // /oc <prompt> - default: send prompt
-                .then(ClientCommandManager.argument("prompt", StringArgumentType.greedyString())
-                    .executes(OpenCodeCommand::executePrompt))
-
-                // /oc - show help
-                .executes(OpenCodeCommand::executeHelp)
-        );
+        dispatcher.register(buildRootCommand("oc", false));
+        dispatcher.register(buildRootCommand("codex", true));
     }
 
-    private static int executeHelp(CommandContext<FabricClientCommandSource> context) {
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> buildRootCommand(
+            String name, boolean preferCodex) {
+        return ClientCommandManager.literal(name)
+            // /<cmd> help
+            .then(ClientCommandManager.literal("help")
+                .executes(context -> executeHelp(context, preferCodex)))
+
+            // /<cmd> status
+            .then(ClientCommandManager.literal("status")
+                .executes(context -> executeStatus(context, preferCodex)))
+
+            // /<cmd> cancel
+            .then(ClientCommandManager.literal("cancel")
+                .executes(context -> executeCancel(context, preferCodex)))
+
+            // /<cmd> pause
+            .then(ClientCommandManager.literal("pause")
+                .executes(context -> executePause(context, preferCodex)))
+
+            // /<cmd> session ...
+            .then(ClientCommandManager.literal("session")
+                // /<cmd> session new
+                .then(ClientCommandManager.literal("new")
+                    .executes(context -> executeSessionNew(context, preferCodex)))
+                // /<cmd> session list
+                .then(ClientCommandManager.literal("list")
+                    .executes(context -> executeSessionList(context, preferCodex)))
+                // /<cmd> session use <id>
+                .then(ClientCommandManager.literal("use")
+                    .then(ClientCommandManager.argument("sessionId", StringArgumentType.string())
+                        .executes(context -> executeSessionUse(context, preferCodex)))))
+
+            // /<cmd> config ...
+            .then(ClientCommandManager.literal("config")
+                // /<cmd> config url <url>
+                .then(ClientCommandManager.literal("url")
+                    .then(ClientCommandManager.argument("url", StringArgumentType.string())
+                        .executes(context -> executeConfigUrl(context, preferCodex))))
+                // /<cmd> config backend <opencode|codex>
+                .then(ClientCommandManager.literal("backend")
+                    .then(ClientCommandManager.argument("backend", StringArgumentType.word())
+                        .executes(context -> executeConfigBackend(context, preferCodex))))
+                // /<cmd> config codex <path>
+                .then(ClientCommandManager.literal("codex")
+                    .then(ClientCommandManager.argument("path", StringArgumentType.greedyString())
+                        .executes(context -> executeConfigCodexPath(context, preferCodex))))
+                // /<cmd> config approve <true|false>
+                .then(ClientCommandManager.literal("approve")
+                    .then(ClientCommandManager.argument("autoApprove", StringArgumentType.word())
+                        .executes(context -> executeConfigAutoApprove(context, preferCodex))))
+                // /<cmd> config dir <path>
+                .then(ClientCommandManager.literal("dir")
+                    .then(ClientCommandManager.argument("path", StringArgumentType.greedyString())
+                        .executes(context -> executeConfigDir(context, preferCodex)))))
+
+            // /<cmd> <prompt> - default: send prompt
+            .then(ClientCommandManager.argument("prompt", StringArgumentType.greedyString())
+                .executes(context -> executePrompt(context, preferCodex)))
+
+            // /<cmd> - show help
+            .executes(context -> executeHelp(context, preferCodex));
+    }
+
+    private static void ensurePreferredBackend(CommandContext<FabricClientCommandSource> context, boolean preferCodex) {
+        if (!preferCodex) {
+            return;
+        }
+        boolean switched = OpenCodeMod.ensureBackend("codex");
+        if (switched) {
+            context.getSource().sendFeedback(Text.literal("Switched backend to Codex")
+                    .formatted(Formatting.YELLOW));
+        }
+    }
+
+    private static int executeHelp(CommandContext<FabricClientCommandSource> context, boolean preferCodex) {
+        ensurePreferredBackend(context, preferCodex);
         FabricClientCommandSource source = context.getSource();
         String agentName = OpenCodeMod.getAgentName();
 
         source.sendFeedback(Text.literal("=== " + agentName + " Commands ===").formatted(Formatting.AQUA, Formatting.BOLD));
-        source.sendFeedback(Text.literal("/oc <prompt>").formatted(Formatting.GREEN)
+        source.sendFeedback(Text.literal("/oc (/codex) <prompt>").formatted(Formatting.GREEN)
                 .append(Text.literal(" - Send a prompt").formatted(Formatting.GRAY)));
-        source.sendFeedback(Text.literal("/oc status").formatted(Formatting.GREEN)
+        source.sendFeedback(Text.literal("/oc (/codex) status").formatted(Formatting.GREEN)
                 .append(Text.literal(" - Show status").formatted(Formatting.GRAY)));
-        source.sendFeedback(Text.literal("/oc session new").formatted(Formatting.GREEN)
+        source.sendFeedback(Text.literal("/oc (/codex) session new").formatted(Formatting.GREEN)
                 .append(Text.literal(" - Create new session").formatted(Formatting.GRAY)));
-        source.sendFeedback(Text.literal("/oc session list").formatted(Formatting.GREEN)
+        source.sendFeedback(Text.literal("/oc (/codex) session list").formatted(Formatting.GREEN)
                 .append(Text.literal(" - List sessions").formatted(Formatting.GRAY)));
-        source.sendFeedback(Text.literal("/oc session use <#>").formatted(Formatting.GREEN)
+        source.sendFeedback(Text.literal("/oc (/codex) session use <#>").formatted(Formatting.GREEN)
                 .append(Text.literal(" - Switch session by number").formatted(Formatting.GRAY)));
-        source.sendFeedback(Text.literal("/oc cancel").formatted(Formatting.GREEN)
+        source.sendFeedback(Text.literal("/oc (/codex) cancel").formatted(Formatting.GREEN)
                 .append(Text.literal(" - Cancel generation").formatted(Formatting.GRAY)));
-        source.sendFeedback(Text.literal("/oc pause").formatted(Formatting.GREEN)
+        source.sendFeedback(Text.literal("/oc (/codex) pause").formatted(Formatting.GREEN)
                 .append(Text.literal(" - Toggle pause control").formatted(Formatting.GRAY)));
-        source.sendFeedback(Text.literal("/oc config backend <opencode|codex>").formatted(Formatting.GREEN)
+        source.sendFeedback(Text.literal("/oc (/codex) config backend <opencode|codex>").formatted(Formatting.GREEN)
                 .append(Text.literal(" - Set backend").formatted(Formatting.GRAY)));
-        source.sendFeedback(Text.literal("/oc config codex <path>").formatted(Formatting.GREEN)
+        source.sendFeedback(Text.literal("/oc (/codex) config codex <path>").formatted(Formatting.GREEN)
                 .append(Text.literal(" - Set Codex binary path").formatted(Formatting.GRAY)));
-        source.sendFeedback(Text.literal("/oc config approve <true|false>").formatted(Formatting.GREEN)
+        source.sendFeedback(Text.literal("/oc (/codex) config approve <true|false>").formatted(Formatting.GREEN)
                 .append(Text.literal(" - Auto-approve Codex requests").formatted(Formatting.GRAY)));
-        source.sendFeedback(Text.literal("/oc help").formatted(Formatting.GREEN)
+        source.sendFeedback(Text.literal("/oc (/codex) help").formatted(Formatting.GREEN)
                 .append(Text.literal(" - Show this help").formatted(Formatting.GRAY)));
 
         return 1;
     }
 
-    private static int executeStatus(CommandContext<FabricClientCommandSource> context) {
+    private static int executeStatus(CommandContext<FabricClientCommandSource> context, boolean preferCodex) {
+        ensurePreferredBackend(context, preferCodex);
         FabricClientCommandSource source = context.getSource();
         AgentClient client = OpenCodeMod.getClient();
         String agentName = OpenCodeMod.getAgentName();
@@ -152,7 +169,7 @@ public class OpenCodeCommand {
                     .append(Text.literal(session.getTitle()).formatted(Formatting.WHITE)));
         } else {
             source.sendFeedback(Text.literal("Session: ").formatted(Formatting.GRAY)
-                    .append(Text.literal("None (use /oc session new)").formatted(Formatting.YELLOW)));
+                    .append(Text.literal("None (use /oc or /codex session new)").formatted(Formatting.YELLOW)));
         }
 
         // Pause status
@@ -163,7 +180,8 @@ public class OpenCodeCommand {
         return 1;
     }
 
-    private static int executePrompt(CommandContext<FabricClientCommandSource> context) {
+    private static int executePrompt(CommandContext<FabricClientCommandSource> context, boolean preferCodex) {
+        ensurePreferredBackend(context, preferCodex);
         FabricClientCommandSource source = context.getSource();
         AgentClient client = OpenCodeMod.getClient();
         String prompt = StringArgumentType.getString(context, "prompt");
@@ -175,7 +193,7 @@ public class OpenCodeCommand {
         }
 
         if (client.getCurrentSession() == null) {
-            source.sendError(Text.literal("No active session. Use /oc session new"));
+            source.sendError(Text.literal("No active session. Use /oc or /codex session new"));
             return 0;
         }
 
@@ -193,7 +211,8 @@ public class OpenCodeCommand {
         return 1;
     }
 
-    private static int executeCancel(CommandContext<FabricClientCommandSource> context) {
+    private static int executeCancel(CommandContext<FabricClientCommandSource> context, boolean preferCodex) {
+        ensurePreferredBackend(context, preferCodex);
         FabricClientCommandSource source = context.getSource();
         AgentClient client = OpenCodeMod.getClient();
 
@@ -209,7 +228,8 @@ public class OpenCodeCommand {
         return 1;
     }
 
-    private static int executePause(CommandContext<FabricClientCommandSource> context) {
+    private static int executePause(CommandContext<FabricClientCommandSource> context, boolean preferCodex) {
+        ensurePreferredBackend(context, preferCodex);
         FabricClientCommandSource source = context.getSource();
         var pauseController = OpenCodeMod.getPauseController();
 
@@ -223,7 +243,8 @@ public class OpenCodeCommand {
         return 1;
     }
 
-    private static int executeSessionNew(CommandContext<FabricClientCommandSource> context) {
+    private static int executeSessionNew(CommandContext<FabricClientCommandSource> context, boolean preferCodex) {
+        ensurePreferredBackend(context, preferCodex);
         FabricClientCommandSource source = context.getSource();
         AgentClient client = OpenCodeMod.getClient();
         String agentName = OpenCodeMod.getAgentName();
@@ -248,7 +269,8 @@ public class OpenCodeCommand {
         return 1;
     }
 
-    private static int executeSessionList(CommandContext<FabricClientCommandSource> context) {
+    private static int executeSessionList(CommandContext<FabricClientCommandSource> context, boolean preferCodex) {
+        ensurePreferredBackend(context, preferCodex);
         FabricClientCommandSource source = context.getSource();
         AgentClient client = OpenCodeMod.getClient();
         String agentName = OpenCodeMod.getAgentName();
@@ -266,11 +288,12 @@ public class OpenCodeCommand {
                         return;
                     }
 
-                    // Cache sessions for use with /oc session use <number>
+                    // Cache sessions for use with /oc or /codex session use <number>
                     cachedSessions = new ArrayList<>(sessions);
 
                     source.sendFeedback(Text.literal("=== Sessions ===").formatted(Formatting.AQUA, Formatting.BOLD));
-                    source.sendFeedback(Text.literal("Use /oc session use <number> to switch").formatted(Formatting.GRAY));
+                    source.sendFeedback(Text.literal("Use /oc or /codex session use <number> to switch")
+                            .formatted(Formatting.GRAY));
 
                     for (int i = 0; i < sessions.size(); i++) {
                         SessionInfo session = sessions.get(i);
@@ -288,7 +311,8 @@ public class OpenCodeCommand {
         return 1;
     }
 
-    private static int executeSessionUse(CommandContext<FabricClientCommandSource> context) {
+    private static int executeSessionUse(CommandContext<FabricClientCommandSource> context, boolean preferCodex) {
+        ensurePreferredBackend(context, preferCodex);
         FabricClientCommandSource source = context.getSource();
         AgentClient client = OpenCodeMod.getClient();
         String agentName = OpenCodeMod.getAgentName();
@@ -326,7 +350,7 @@ public class OpenCodeCommand {
         return 1;
     }
 
-    private static int executeConfigUrl(CommandContext<FabricClientCommandSource> context) {
+    private static int executeConfigUrl(CommandContext<FabricClientCommandSource> context, boolean preferCodex) {
         FabricClientCommandSource source = context.getSource();
         String url = StringArgumentType.getString(context, "url");
 
@@ -338,7 +362,7 @@ public class OpenCodeCommand {
         return 1;
     }
 
-    private static int executeConfigBackend(CommandContext<FabricClientCommandSource> context) {
+    private static int executeConfigBackend(CommandContext<FabricClientCommandSource> context, boolean preferCodex) {
         FabricClientCommandSource source = context.getSource();
         String backend = StringArgumentType.getString(context, "backend");
         String normalized = backend.toLowerCase();
@@ -348,15 +372,19 @@ public class OpenCodeCommand {
             return 0;
         }
 
-        OpenCodeMod.getConfigManager().setBackend(normalized);
+        boolean switched = OpenCodeMod.ensureBackend(normalized);
         source.sendFeedback(Text.literal("Backend set to: ")
                 .append(Text.literal(normalized).formatted(Formatting.GREEN)));
-        source.sendFeedback(Text.literal("Restart the game to apply changes").formatted(Formatting.YELLOW));
+        if (switched) {
+            source.sendFeedback(Text.literal("Backend switched immediately").formatted(Formatting.YELLOW));
+        } else {
+            source.sendFeedback(Text.literal("Backend already active").formatted(Formatting.GRAY));
+        }
 
         return 1;
     }
 
-    private static int executeConfigCodexPath(CommandContext<FabricClientCommandSource> context) {
+    private static int executeConfigCodexPath(CommandContext<FabricClientCommandSource> context, boolean preferCodex) {
         FabricClientCommandSource source = context.getSource();
         String path = StringArgumentType.getString(context, "path");
 
@@ -368,7 +396,7 @@ public class OpenCodeCommand {
         return 1;
     }
 
-    private static int executeConfigAutoApprove(CommandContext<FabricClientCommandSource> context) {
+    private static int executeConfigAutoApprove(CommandContext<FabricClientCommandSource> context, boolean preferCodex) {
         FabricClientCommandSource source = context.getSource();
         String value = StringArgumentType.getString(context, "autoApprove");
         if (!"true".equalsIgnoreCase(value) && !"false".equalsIgnoreCase(value)) {
@@ -386,7 +414,7 @@ public class OpenCodeCommand {
         return 1;
     }
 
-    private static int executeConfigDir(CommandContext<FabricClientCommandSource> context) {
+    private static int executeConfigDir(CommandContext<FabricClientCommandSource> context, boolean preferCodex) {
         FabricClientCommandSource source = context.getSource();
         String path = StringArgumentType.getString(context, "path");
 

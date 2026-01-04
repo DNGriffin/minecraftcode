@@ -64,7 +64,7 @@ public class PauseOverlay {
         );
 
         // Draw hint at bottom
-        String hint = "Use /oc <prompt> to give " + OpenCodeMod.getAgentName() + " a task";
+        String hint = "Use /oc or /codex <prompt> to give " + OpenCodeMod.getAgentName() + " a task";
         int hintWidth = textRenderer.getWidth(hint);
         context.drawTextWithShadow(
             textRenderer,

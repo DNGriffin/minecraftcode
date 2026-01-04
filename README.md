@@ -18,7 +18,7 @@ https://github.com/user-attachments/assets/e3aad745-a03a-4c0f-b83c-ce15f92d66ed
 ## Features
 
 - **Smart Pause Mechanic** - Game automatically pauses when the AI is idle, letting you focus on coding without your character dying. Resumes instantly when the AI starts working.
-- **In-Game Chat Interface** - Send prompts and receive responses directly in Minecraft chat using `/oc` commands.
+- **In-Game Chat Interface** - Send prompts and receive responses directly in Minecraft chat using `/oc` or `/codex` commands.
 - **Session Management** - Create, list, and switch between coding sessions without leaving the game.
 - **Real-Time Streaming** - See AI responses as they're generated, token by token.
 - **Tool Visibility** - Get feedback about what tools the AI is using (reading files, writing code, etc.).
@@ -31,14 +31,15 @@ https://github.com/user-attachments/assets/e3aad745-a03a-4c0f-b83c-ce15f92d66ed
 2. Download the mod JAR from [Releases](../../releases) and place it in your `.minecraft/mods` folder
 3. Start OpenCode: `opencode serve` (or set `backend` to `codex` for Codex)
 4. Launch Minecraft and create/join a single player world
-5. Use `/oc session list` & `/oc session join #` 
-6. Start coding with `/oc <your prompt here>`
+5. Use `/oc session list` & `/oc session use #` (or `/codex ...`)
+6. Start coding with `/oc <your prompt here>` (or `/codex <your prompt here>`)
 
 ### Using Codex
 
 1. Install and log in to Codex (`codex login status`)
-2. Run `/oc config backend codex` (and `/oc config codex <path>` if needed)
-3. Restart the game and create a session with `/oc session new`
+2. Run `/codex` (or `/oc config backend codex`) to switch to Codex
+3. Run `/oc config codex <path>` if needed
+4. Create a session with `/codex session new`
 
 ## Requirements
 
@@ -68,6 +69,8 @@ cd opencode-minecraft
 The built JAR will be in `build/libs/opencode-minecraft-1.0.0.jar`
 
 ## Commands
+
+All commands work with `/oc` or `/codex`. Using `/codex` automatically switches the backend to Codex.
 
 | Command | Description |
 |---------|-------------|
@@ -147,13 +150,13 @@ Configuration is stored in `.minecraft/config/opencode.json`:
 - Check Minecraft logs for any spawn errors
 
 ### Game stays paused
-- Use `/oc status` to check the current state
-- If stuck, use `/oc pause` to toggle pause control off
+- Use `/oc status` (or `/codex status`) to check the current state
+- If stuck, use `/oc pause` (or `/codex pause`) to toggle pause control off
 - Ensure OpenCode server is running and responsive
 
 ### No response in chat
-- Create a session first: `/oc session new`
-- Check `/oc status` for connection issues
+- Create a session first: `/oc session new` (or `/codex session new`)
+- Check `/oc status` (or `/codex status`) for connection issues
 - Look at Minecraft logs for errors
 
 ### "Connection Lost" when joining world
