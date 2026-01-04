@@ -196,6 +196,9 @@ public class OpenCodeCommand {
         boolean newState = !pauseController.isEnabled();
         pauseController.setEnabled(newState);
 
+        // Save the setting to config
+        OpenCodeMod.getConfigManager().setPauseEnabled(newState);
+
         source.sendFeedback(Text.literal("Pause control: ")
                 .append(Text.literal(newState ? "Enabled" : "Disabled")
                         .formatted(newState ? Formatting.GREEN : Formatting.RED)));

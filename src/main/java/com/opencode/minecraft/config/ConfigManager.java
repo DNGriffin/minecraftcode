@@ -75,4 +75,9 @@ public class ConfigManager {
         config.lastSessionId = sessionId;
         save();
     }
+
+    public void setPauseEnabled(boolean enabled) {
+        config.pauseEnabled = enabled;
+        save();
+    }
 }
