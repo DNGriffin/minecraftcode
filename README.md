@@ -27,11 +27,11 @@ https://github.com/user-attachments/assets/e3aad745-a03a-4c0f-b83c-ce15f92d66ed
 
 ## Quick Start
 
-1. Install [Fabric Loader](https://fabricmc.net/use/installer/) for Minecraft 1.21.4
+1. Install [Fabric Loader](https://fabricmc.net/use/installer/) and [Fabric API](https://modrinth.com/mod/fabric-api?version=1.21.4) for Minecraft 1.21.4
 2. Download the mod JAR from [Releases](../../releases) and place it in your `.minecraft/mods` folder
-3. Start OpenCode: `opencode`
+3. Start OpenCode server: `opencode serve`
 4. Launch Minecraft and create/join a single player world
-5. Use `/oc session list` & `/oc session join #` 
+5. Use `/oc session list` & `/oc session join #`
 6. Start coding with `/oc <your prompt here>`
 
 ## Requirements
@@ -46,9 +46,9 @@ https://github.com/user-attachments/assets/e3aad745-a03a-4c0f-b83c-ce15f92d66ed
 
 ### Option 1: Download Release (Recommended)
 
-1. Download the latest `opencode-minecraft-x.x.x.jar` from [Releases](../../releases)
-2. Place the JAR file in your `.minecraft/mods` folder
-3. Ensure [Fabric API](https://modrinth.com/mod/fabric-api) is also installed
+1. Install [Fabric API](https://modrinth.com/mod/fabric-api?version=1.21.4) (required dependency)
+2. Download the latest `opencode-minecraft-x.x.x.jar` from [Releases](../../releases)
+3. Place both JAR files in your `.minecraft/mods` folder
 
 ### Option 2: Build from Source
 
@@ -59,6 +59,8 @@ cd opencode-minecraft
 ```
 
 The built JAR will be in `build/libs/opencode-minecraft-1.0.0.jar`
+
+**Note:** You still need to install [Fabric API](https://modrinth.com/mod/fabric-api?version=1.21.4) separately.
 
 ## Commands
 
