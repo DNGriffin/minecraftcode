@@ -157,7 +157,7 @@ public class OpenCodeHttpClient {
 
         String url = baseUrl + "/session/" + sessionId + "/message";
 
-        OpenCodeMod.LOGGER.info("Sending message to session {}: {}", sessionId, text);
+        OpenCodeMod.LOGGER.info("Sending message to session {}", sessionId);
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
