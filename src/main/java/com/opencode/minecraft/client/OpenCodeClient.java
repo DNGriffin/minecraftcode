@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
  * Main coordinator for OpenCode client functionality.
  * Manages HTTP client, session, and event handling.
  */
-public class OpenCodeClient {
+public class OpenCodeClient implements AgentClient {
     private final OpenCodeHttpClient httpClient;
     private final SessionManager sessionManager;
     private final PauseController pauseController;

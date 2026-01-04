@@ -29,10 +29,16 @@ https://github.com/user-attachments/assets/e3aad745-a03a-4c0f-b83c-ce15f92d66ed
 
 1. Install [Fabric Loader](https://fabricmc.net/use/installer/) for Minecraft 1.21.4
 2. Download the mod JAR from [Releases](../../releases) and place it in your `.minecraft/mods` folder
-3. Start OpenCode: `opencode`
+3. Start OpenCode: `opencode serve` (or set `backend` to `codex` for Codex)
 4. Launch Minecraft and create/join a single player world
 5. Use `/oc session list` & `/oc session join #` 
 6. Start coding with `/oc <your prompt here>`
+
+### Using Codex
+
+1. Install and log in to Codex (`codex login status`)
+2. Run `/oc config backend codex` (and `/oc config codex <path>` if needed)
+3. Restart the game and create a session with `/oc session new`
 
 ## Requirements
 
@@ -41,6 +47,7 @@ https://github.com/user-attachments/assets/e3aad745-a03a-4c0f-b83c-ce15f92d66ed
 - Fabric API
 - Java 21+
 - [OpenCode](https://github.com/anthropics/opencode) running in server mode (`opencode serve`)
+- Or [Codex](https://github.com/openai/codex) installed locally for the Codex backend
 
 ## Installation
 
@@ -72,6 +79,9 @@ The built JAR will be in `build/libs/opencode-minecraft-1.0.0.jar`
 | `/oc cancel` | Cancel current generation |
 | `/oc pause` | Toggle pause control on/off |
 | `/oc config url <url>` | Set server URL |
+| `/oc config backend <opencode|codex>` | Set backend |
+| `/oc config codex <path>` | Set Codex binary path |
+| `/oc config approve <true|false>` | Auto-approve Codex requests |
 | `/oc config dir <path>` | Set working directory |
 | `/oc help` | Show help |
 
@@ -101,6 +111,9 @@ Configuration is stored in `.minecraft/config/opencode.json`:
 ```json
 {
   "serverUrl": "http://localhost:4096",
+  "backend": "opencode",
+  "codexPath": "codex",
+  "codexAutoApprove": true,
   "workingDirectory": "/path/to/your/project",
   "lastSessionId": null,
   "autoReconnect": true,
@@ -112,6 +125,9 @@ Configuration is stored in `.minecraft/config/opencode.json`:
 | Option | Default | Description |
 |--------|---------|-------------|
 | `serverUrl` | `http://localhost:4096` | OpenCode server URL |
+| `backend` | `opencode` | Backend to use: `opencode` or `codex` |
+| `codexPath` | `codex` | Path to the Codex CLI binary |
+| `codexAutoApprove` | `true` | Auto-approve Codex tool requests |
 | `workingDirectory` | User home | Project directory for file operations |
 | `lastSessionId` | `null` | Auto-resume last session on connect |
 | `autoReconnect` | `true` | Automatically reconnect if disconnected |
@@ -124,6 +140,11 @@ Configuration is stored in `.minecraft/config/opencode.json`:
 - Ensure OpenCode is running: `opencode serve`
 - Check if the server is accessible at `http://localhost:4096`
 - Verify `serverUrl` in config matches your server
+
+### "Not connected to Codex"
+- Ensure the Codex CLI is installed and logged in (`codex login status`)
+- Verify `codexPath` points to your Codex binary
+- Check Minecraft logs for any spawn errors
 
 ### Game stays paused
 - Use `/oc status` to check the current state
@@ -157,6 +178,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
 The mod consists of several key components:
 
 - **OpenCodeClient** - Coordinates HTTP communication and event handling
+- **CodexClient** - Spawns `codex app-server` and streams JSON-RPC notifications
 - **SessionManager** - Manages session lifecycle and state
 - **PauseController** - Determines when to pause/resume based on AI state
 - **Mixins** - Hook into Minecraft's integrated server to control ticks
@@ -165,6 +187,10 @@ Communication with OpenCode:
 - REST API for session management (`/session/*` endpoints)
 - Server-Sent Events (SSE) at `/global/event` for real-time updates
 - Pause state is driven by `session.status` events (`idle` vs `busy`)
+
+Communication with Codex:
+- JSON-RPC over stdio (`codex app-server`)
+- Turn lifecycle notifications drive pause/resume
 
 ## Contributing
 

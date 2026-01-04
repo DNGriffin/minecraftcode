@@ -2,6 +2,8 @@ package com.opencode.minecraft.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.opencode.minecraft.OpenCodeMod;
 import net.fabricmc.loader.api.FabricLoader;
 
@@ -32,10 +34,18 @@ public class ConfigManager {
         if (Files.exists(configPath)) {
             try {
                 String json = Files.readString(configPath);
-                config = gson.fromJson(json, ModConfig.class);
+                JsonObject raw = JsonParser.parseString(json).getAsJsonObject();
+                config = gson.fromJson(raw, ModConfig.class);
+                if (config == null) {
+                    config = new ModConfig();
+                }
+                config.applyDefaults(raw);
                 OpenCodeMod.LOGGER.info("Loaded config from {}", configPath);
             } catch (IOException e) {
                 OpenCodeMod.LOGGER.error("Failed to load config", e);
+                config = new ModConfig();
+            } catch (Exception e) {
+                OpenCodeMod.LOGGER.error("Failed to parse config", e);
                 config = new ModConfig();
             }
         } else {
@@ -68,6 +78,21 @@ public class ConfigManager {
 
     public void setWorkingDirectory(String directory) {
         config.workingDirectory = directory;
+        save();
+    }
+
+    public void setBackend(String backend) {
+        config.backend = backend;
+        save();
+    }
+
+    public void setCodexPath(String path) {
+        config.codexPath = path;
+        save();
+    }
+
+    public void setCodexAutoApprove(boolean autoApprove) {
+        config.codexAutoApprove = autoApprove;
         save();
     }
 

@@ -4,7 +4,7 @@ This document provides context for LLMs working with the OpenCode Minecraft mod 
 
 ## Project Summary
 
-OpenCode Minecraft is a Fabric mod for Minecraft 1.21.4 that integrates with [OpenCode](https://github.com/anthropics/opencode), an agentic coding tool. The mod's unique feature is a **pause mechanic**: the game freezes when the AI is idle (waiting for input) and resumes when the AI is actively working. This lets players code without their Minecraft character dying.
+OpenCode Minecraft is a Fabric mod for Minecraft 1.21.4 that integrates with [OpenCode](https://github.com/anthropics/opencode) or [Codex](https://github.com/openai/codex). The mod's unique feature is a **pause mechanic**: the game freezes when the AI is idle (waiting for input) and resumes when the AI is actively working. This lets players code without their Minecraft character dying.
 
 ## Tech Stack
 
@@ -48,7 +48,8 @@ OpenCode Minecraft is a Fabric mod for Minecraft 1.21.4 that integrates with [Op
 | File | Purpose |
 |------|---------|
 | `OpenCodeMod.java` | Mod entry point, initializes all components |
-| `client/OpenCodeClient.java` | Coordinates HTTP client, session manager, event handling |
+| `client/OpenCodeClient.java` | Coordinates OpenCode HTTP client, session manager, event handling |
+| `client/CodexClient.java` | Spawns `codex app-server` and handles JSON-RPC notifications |
 | `client/http/OpenCodeHttpClient.java` | REST API client, SSE subscription |
 | `client/http/SseEvent.java` | SSE event data model with helper methods |
 | `client/session/SessionManager.java` | Session lifecycle, state machine |
@@ -88,6 +89,15 @@ Subscribe to `/global/event` for real-time updates. Event format:
   }
 }
 ```
+
+## Codex API Integration
+
+Codex integration uses the local app-server JSON-RPC protocol:
+
+- Spawn `codex app-server`
+- Requests: `initialize`, `thread/start`, `thread/list`, `thread/resume`, `turn/start`, `turn/interrupt`
+- Notifications: `turn/started`, `turn/completed`, `item/agentMessage/delta`, `item/started`, `item/completed`
+- Approvals: auto-approve `item/commandExecution/requestApproval` and `item/fileChange/requestApproval`
 
 Key event types:
 - `session.status` - Contains `properties.status.type` = "idle" | "busy"

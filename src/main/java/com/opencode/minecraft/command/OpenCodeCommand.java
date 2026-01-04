@@ -4,9 +4,8 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.opencode.minecraft.OpenCodeMod;
-import com.opencode.minecraft.client.OpenCodeClient;
+import com.opencode.minecraft.client.AgentClient;
 import com.opencode.minecraft.client.session.SessionInfo;
-import com.opencode.minecraft.game.MessageRenderer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.text.Text;
@@ -74,6 +73,18 @@ public class OpenCodeCommand {
                     .then(ClientCommandManager.literal("url")
                         .then(ClientCommandManager.argument("url", StringArgumentType.string())
                             .executes(OpenCodeCommand::executeConfigUrl)))
+                    // /oc config backend <opencode|codex>
+                    .then(ClientCommandManager.literal("backend")
+                        .then(ClientCommandManager.argument("backend", StringArgumentType.word())
+                            .executes(OpenCodeCommand::executeConfigBackend)))
+                    // /oc config codex <path>
+                    .then(ClientCommandManager.literal("codex")
+                        .then(ClientCommandManager.argument("path", StringArgumentType.greedyString())
+                            .executes(OpenCodeCommand::executeConfigCodexPath)))
+                    // /oc config approve <true|false>
+                    .then(ClientCommandManager.literal("approve")
+                        .then(ClientCommandManager.argument("autoApprove", StringArgumentType.word())
+                            .executes(OpenCodeCommand::executeConfigAutoApprove)))
                     // /oc config dir <path>
                     .then(ClientCommandManager.literal("dir")
                         .then(ClientCommandManager.argument("path", StringArgumentType.greedyString())
@@ -90,8 +101,9 @@ public class OpenCodeCommand {
 
     private static int executeHelp(CommandContext<FabricClientCommandSource> context) {
         FabricClientCommandSource source = context.getSource();
+        String agentName = OpenCodeMod.getAgentName();
 
-        source.sendFeedback(Text.literal("=== OpenCode Commands ===").formatted(Formatting.AQUA, Formatting.BOLD));
+        source.sendFeedback(Text.literal("=== " + agentName + " Commands ===").formatted(Formatting.AQUA, Formatting.BOLD));
         source.sendFeedback(Text.literal("/oc <prompt>").formatted(Formatting.GREEN)
                 .append(Text.literal(" - Send a prompt").formatted(Formatting.GRAY)));
         source.sendFeedback(Text.literal("/oc status").formatted(Formatting.GREEN)
@@ -106,6 +118,12 @@ public class OpenCodeCommand {
                 .append(Text.literal(" - Cancel generation").formatted(Formatting.GRAY)));
         source.sendFeedback(Text.literal("/oc pause").formatted(Formatting.GREEN)
                 .append(Text.literal(" - Toggle pause control").formatted(Formatting.GRAY)));
+        source.sendFeedback(Text.literal("/oc config backend <opencode|codex>").formatted(Formatting.GREEN)
+                .append(Text.literal(" - Set backend").formatted(Formatting.GRAY)));
+        source.sendFeedback(Text.literal("/oc config codex <path>").formatted(Formatting.GREEN)
+                .append(Text.literal(" - Set Codex binary path").formatted(Formatting.GRAY)));
+        source.sendFeedback(Text.literal("/oc config approve <true|false>").formatted(Formatting.GREEN)
+                .append(Text.literal(" - Auto-approve Codex requests").formatted(Formatting.GRAY)));
         source.sendFeedback(Text.literal("/oc help").formatted(Formatting.GREEN)
                 .append(Text.literal(" - Show this help").formatted(Formatting.GRAY)));
 
@@ -114,9 +132,10 @@ public class OpenCodeCommand {
 
     private static int executeStatus(CommandContext<FabricClientCommandSource> context) {
         FabricClientCommandSource source = context.getSource();
-        OpenCodeClient client = OpenCodeMod.getClient();
+        AgentClient client = OpenCodeMod.getClient();
+        String agentName = OpenCodeMod.getAgentName();
 
-        source.sendFeedback(Text.literal("=== OpenCode Status ===").formatted(Formatting.AQUA, Formatting.BOLD));
+        source.sendFeedback(Text.literal("=== " + agentName + " Status ===").formatted(Formatting.AQUA, Formatting.BOLD));
 
         // Connection status
         boolean connected = client.isReady();
@@ -146,11 +165,12 @@ public class OpenCodeCommand {
 
     private static int executePrompt(CommandContext<FabricClientCommandSource> context) {
         FabricClientCommandSource source = context.getSource();
-        OpenCodeClient client = OpenCodeMod.getClient();
+        AgentClient client = OpenCodeMod.getClient();
         String prompt = StringArgumentType.getString(context, "prompt");
+        String agentName = OpenCodeMod.getAgentName();
 
         if (!client.isReady()) {
-            source.sendError(Text.literal("Not connected to OpenCode server"));
+            source.sendError(Text.literal("Not connected to " + agentName));
             return 0;
         }
 
@@ -175,7 +195,7 @@ public class OpenCodeCommand {
 
     private static int executeCancel(CommandContext<FabricClientCommandSource> context) {
         FabricClientCommandSource source = context.getSource();
-        OpenCodeClient client = OpenCodeMod.getClient();
+        AgentClient client = OpenCodeMod.getClient();
 
         client.cancel()
                 .thenRun(() -> {
@@ -205,10 +225,11 @@ public class OpenCodeCommand {
 
     private static int executeSessionNew(CommandContext<FabricClientCommandSource> context) {
         FabricClientCommandSource source = context.getSource();
-        OpenCodeClient client = OpenCodeMod.getClient();
+        AgentClient client = OpenCodeMod.getClient();
+        String agentName = OpenCodeMod.getAgentName();
 
         if (!client.isReady()) {
-            source.sendError(Text.literal("Not connected to OpenCode server"));
+            source.sendError(Text.literal("Not connected to " + agentName));
             return 0;
         }
 
@@ -229,10 +250,11 @@ public class OpenCodeCommand {
 
     private static int executeSessionList(CommandContext<FabricClientCommandSource> context) {
         FabricClientCommandSource source = context.getSource();
-        OpenCodeClient client = OpenCodeMod.getClient();
+        AgentClient client = OpenCodeMod.getClient();
+        String agentName = OpenCodeMod.getAgentName();
 
         if (!client.isReady()) {
-            source.sendError(Text.literal("Not connected to OpenCode server"));
+            source.sendError(Text.literal("Not connected to " + agentName));
             return 0;
         }
 
@@ -268,11 +290,12 @@ public class OpenCodeCommand {
 
     private static int executeSessionUse(CommandContext<FabricClientCommandSource> context) {
         FabricClientCommandSource source = context.getSource();
-        OpenCodeClient client = OpenCodeMod.getClient();
+        AgentClient client = OpenCodeMod.getClient();
+        String agentName = OpenCodeMod.getAgentName();
         String sessionIdOrNumber = StringArgumentType.getString(context, "sessionId");
 
         if (!client.isReady()) {
-            source.sendError(Text.literal("Not connected to OpenCode server"));
+            source.sendError(Text.literal("Not connected to " + agentName));
             return 0;
         }
 
@@ -310,6 +333,54 @@ public class OpenCodeCommand {
         OpenCodeMod.getConfigManager().setServerUrl(url);
         source.sendFeedback(Text.literal("Server URL set to: ")
                 .append(Text.literal(url).formatted(Formatting.GREEN)));
+        source.sendFeedback(Text.literal("Restart the game to apply changes").formatted(Formatting.YELLOW));
+
+        return 1;
+    }
+
+    private static int executeConfigBackend(CommandContext<FabricClientCommandSource> context) {
+        FabricClientCommandSource source = context.getSource();
+        String backend = StringArgumentType.getString(context, "backend");
+        String normalized = backend.toLowerCase();
+
+        if (!"opencode".equals(normalized) && !"codex".equals(normalized)) {
+            source.sendError(Text.literal("Backend must be opencode or codex"));
+            return 0;
+        }
+
+        OpenCodeMod.getConfigManager().setBackend(normalized);
+        source.sendFeedback(Text.literal("Backend set to: ")
+                .append(Text.literal(normalized).formatted(Formatting.GREEN)));
+        source.sendFeedback(Text.literal("Restart the game to apply changes").formatted(Formatting.YELLOW));
+
+        return 1;
+    }
+
+    private static int executeConfigCodexPath(CommandContext<FabricClientCommandSource> context) {
+        FabricClientCommandSource source = context.getSource();
+        String path = StringArgumentType.getString(context, "path");
+
+        OpenCodeMod.getConfigManager().setCodexPath(path);
+        source.sendFeedback(Text.literal("Codex path set to: ")
+                .append(Text.literal(path).formatted(Formatting.GREEN)));
+        source.sendFeedback(Text.literal("Restart the game to apply changes").formatted(Formatting.YELLOW));
+
+        return 1;
+    }
+
+    private static int executeConfigAutoApprove(CommandContext<FabricClientCommandSource> context) {
+        FabricClientCommandSource source = context.getSource();
+        String value = StringArgumentType.getString(context, "autoApprove");
+        if (!"true".equalsIgnoreCase(value) && !"false".equalsIgnoreCase(value)) {
+            source.sendError(Text.literal("Value must be true or false"));
+            return 0;
+        }
+        boolean enabled = Boolean.parseBoolean(value);
+
+        OpenCodeMod.getConfigManager().setCodexAutoApprove(enabled);
+        source.sendFeedback(Text.literal("Codex auto-approve: ")
+                .append(Text.literal(enabled ? "Enabled" : "Disabled")
+                        .formatted(enabled ? Formatting.GREEN : Formatting.RED)));
         source.sendFeedback(Text.literal("Restart the game to apply changes").formatted(Formatting.YELLOW));
 
         return 1;

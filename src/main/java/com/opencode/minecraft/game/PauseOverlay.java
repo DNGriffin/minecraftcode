@@ -64,7 +64,7 @@ public class PauseOverlay {
         );
 
         // Draw hint at bottom
-        String hint = "Use /oc <prompt> to give OpenCode a task";
+        String hint = "Use /oc <prompt> to give " + OpenCodeMod.getAgentName() + " a task";
         int hintWidth = textRenderer.getWidth(hint);
         context.drawTextWithShadow(
             textRenderer,
@@ -77,6 +77,7 @@ public class PauseOverlay {
 
     private static String getMainMessage(PauseController controller) {
         SessionStatus status = controller.getStatus();
+        String agentName = OpenCodeMod.getAgentName();
 
         if (controller.isUserTyping()) {
             return "GAME PAUSED - Typing...";
@@ -86,21 +87,24 @@ public class PauseOverlay {
             case DISCONNECTED -> "GAME PAUSED - Not Connected";
             case IDLE -> "GAME PAUSED - Waiting for Task";
             case BUSY -> "Processing...";
-            case GENERATING -> "OpenCode is working...";
+            case GENERATING -> agentName + " is working...";
             case RETRY -> "Retrying...";
         };
     }
 
     private static String getSubMessage(PauseController controller) {
         SessionStatus status = controller.getStatus();
+        boolean isCodex = OpenCodeMod.isCodexBackend();
 
         if (controller.isUserTyping()) {
-            return "Game will resume when OpenCode starts generating";
+            return "Game will resume when output starts";
         }
 
         return switch (status) {
-            case DISCONNECTED -> "Start OpenCode with: opencode serve";
-            case IDLE -> "You can only play while OpenCode is building";
+            case DISCONNECTED -> isCodex
+                    ? "Ensure Codex is installed and logged in"
+                    : "Start OpenCode with: opencode serve";
+            case IDLE -> "Waiting for your next task";
             case BUSY -> "Waiting for response...";
             case GENERATING -> "Game resumed - LLM is generating tokens";
             case RETRY -> "Connection issue, retrying...";

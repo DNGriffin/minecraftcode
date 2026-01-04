@@ -1,5 +1,6 @@
 package com.opencode.minecraft.game;
 
+import com.opencode.minecraft.OpenCodeMod;
 import com.opencode.minecraft.util.MarkdownToMinecraft;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.MutableText;
@@ -86,11 +87,13 @@ public class MessageRenderer {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
 
+        String agentName = OpenCodeMod.getAgentName();
+
         // Convert markdown to Minecraft formatting
         Text formatted = MarkdownToMinecraft.convert(text);
 
         MutableText message = Text.literal("")
-                .append(Text.literal("[OpenCode] ").formatted(Formatting.AQUA))
+                .append(Text.literal("[" + agentName + "] ").formatted(Formatting.AQUA))
                 .append(formatted);
 
         client.inGameHud.getChatHud().addMessage(message);
@@ -103,8 +106,10 @@ public class MessageRenderer {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
 
+        String agentName = OpenCodeMod.getAgentName();
+
         MutableText message = Text.literal("")
-                .append(Text.literal("[OpenCode] ").formatted(Formatting.GOLD))
+                .append(Text.literal("[" + agentName + "] ").formatted(Formatting.GOLD))
                 .append(Text.literal(text).formatted(Formatting.YELLOW));
 
         client.inGameHud.getChatHud().addMessage(message);
@@ -117,8 +122,10 @@ public class MessageRenderer {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
 
+        String agentName = OpenCodeMod.getAgentName();
+
         MutableText message = Text.literal("")
-                .append(Text.literal("[OpenCode Error] ").formatted(Formatting.RED))
+                .append(Text.literal("[" + agentName + " Error] ").formatted(Formatting.RED))
                 .append(Text.literal(text).formatted(Formatting.RED));
 
         client.inGameHud.getChatHud().addMessage(message);
