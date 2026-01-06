@@ -28,6 +28,7 @@ public class OpenCodeMod implements ClientModInitializer {
 
         // Initialize pause controller
         pauseController = new PauseController();
+        pauseController.setEnabled(configManager.getConfig().pauseEnabled);
 
         // Initialize OpenCode client
         client = new OpenCodeClient(configManager.getConfig(), pauseController);

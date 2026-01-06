@@ -33,4 +33,9 @@ public class ModConfig {
      * Whether to show status in action bar
      */
     public boolean showStatusBar = true;
+
+    /**
+     * Whether automatic game pausing is enabled
+     */
+    public boolean pauseEnabled = true;
 }
